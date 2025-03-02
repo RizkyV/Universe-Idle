@@ -1,5 +1,5 @@
-//team consists of 6 members - 3 in the frontline and 3 in the backline
-//backline is less likely to be targeted
+//collect gacha units
+//multiple of the same unit can be prestiged
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -20,15 +20,13 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
-//collect gacha units
-//multiple of the same unit can be prestiged
+//constants
+var frontLineChanceMultiplier = 1.5;
+var tickRate = 1000;
 //tracking
 var frontTargets = 0;
 var backTargets = 0;
 var isFighting = false;
-//constants
-var frontLineChanceMultiplier = 1.5;
-var tickRate = 1000;
 function determineTarget(team) {
     var aliveUnits = getTeamUnits(team, true);
     var backlineChance = 0;
@@ -57,17 +55,18 @@ function determineTarget(team) {
         return units[randomIndex_2];
     }
 }
-function attack(unit, enemyTeam) {
-    var target = determineTarget(enemyTeam);
-    if (target) {
-        var damage = unit.stats.attack - target.stats.guard;
-        console.info(unit.name + ' is targeting ' + target.name + ' for ' + unit.stats.attack + ' atk, being blocked by ' + target.stats.guard + ' guard, resulting in ' + damage + ' damage');
-        console.info("".concat(unit.name, " is targeting ").concat(target.name, " for ").concat(unit.stats.attack, " atk, being blocked by ").concat(target.stats.guard, " guard, resulting in ").concat(damage, " damage"));
-        if (damage > 0) {
-            target.stats.health -= damage;
+function attack(unit, enemyTeam, fight) {
+    if (!fight.isOver) {
+        var target = determineTarget(enemyTeam);
+        if (target) {
+            var damage = unit.stats.attack - target.stats.guard;
+            console.info("".concat(unit.name, " is targeting ").concat(target.name, " for ").concat(unit.stats.attack, " atk, being blocked by ").concat(target.stats.guard, " guard, resulting in ").concat(damage, " damage"));
+            if (damage > 0) {
+                target.stats.health -= damage;
+            }
         }
+        checkState(fight);
     }
-    checkState(fight);
 }
 function getFightUnits(fight) {
     var units = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], fight.friendlyTeam.backline, true), fight.friendlyTeam.frontline, true), fight.enemyTeam.backline, true), fight.enemyTeam.frontline, true);
@@ -104,16 +103,18 @@ function checkState(fight) {
     var friendlyAlive = getTeamUnits(fight.friendlyTeam, true);
     console.debug(friendlyAlive);
     if (!friendlyAlive || friendlyAlive.length < 1) {
-        console.log('all friendly units are dead');
+        console.info('all friendly units are dead');
         fight.isOver = true;
         fight.friendlyWon = false;
+        stopFight();
     }
     var enemyAlive = getTeamUnits(fight.enemyTeam, true);
     console.debug(enemyAlive);
     if (!enemyAlive || enemyAlive.length < 1) {
-        console.log('all enemy units are dead');
+        console.info('all enemy units are dead');
         fight.isOver = true;
         fight.friendlyWon = true;
+        stopFight();
     }
 }
 function fightSetup(fight) {
@@ -141,31 +142,26 @@ function processTick(fight) {
     // attack in order of speed
     fight.friendlyTeam.frontline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, enemyTeam);
+            attack(item, enemyTeam, fight);
         }
     });
     fight.friendlyTeam.backline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, enemyTeam);
+            attack(item, enemyTeam, fight);
         }
     });
     fight.enemyTeam.frontline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam);
+            attack(item, friendlyTeam, fight);
         }
     });
     fight.enemyTeam.backline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam);
+            attack(item, friendlyTeam, fight);
         }
     });
-    console.info('friendly', fight.friendlyTeam);
-    console.info('enemy', fight.enemyTeam);
-    if (fight.isOver) {
-        console.debug(frontTargets);
-        console.debug(backTargets);
-        stopFight();
-    }
+    console.debug('friendly', fight.friendlyTeam);
+    console.debug('enemy', fight.enemyTeam);
     if (fight.isOver) {
         console.info(fight.friendlyWon ? 'Fight won' : 'Fight lost');
     }
@@ -179,20 +175,14 @@ fightSetup(fight);
 //fight ticks until the fight has a winner
 //fight cleanup (reset state and stats)
 //fight rewards / punishment
-/**
- * Runs a tick function at a set interval.
- *
- * @param tickFunction The function to be executed at each tick.
- * @param intervalMs The interval between ticks in milliseconds.
- */
 function startFight(fight) {
-    fightSetup(fight);
     isFighting = true;
+    fightSetup(fight);
     var tick = function () {
+        processTick(fight);
         if (!isFighting) {
             return;
         }
-        processTick(fight);
         setTimeout(tick, tickRate);
     };
     // Start the loop
@@ -204,6 +194,5 @@ function stopFight() {
 window.onload = function () {
     var btn = document.getElementById('tick');
     btn.addEventListener('click', function () { return startFight(fight); });
-    //runs a tick per second and stops on fight end
     startFight(fight);
 };

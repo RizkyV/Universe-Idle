@@ -1,16 +1,14 @@
-//team consists of 6 members - 3 in the frontline and 3 in the backline
-//backline is less likely to be targeted
-
 //collect gacha units
 //multiple of the same unit can be prestiged
 
+//constants
+const frontLineChanceMultiplier = 1.5;
+const tickRate = 1000;
 //tracking
 var frontTargets = 0;
 var backTargets = 0;
 var isFighting = false;
-//constants
-const frontLineChanceMultiplier = 1.5;
-const tickRate = 1000;
+
 
 function determineTarget(team: Team): Unit {
     const aliveUnits = getTeamUnits(team, true);
@@ -39,18 +37,19 @@ function determineTarget(team: Team): Unit {
     }
 }
 
-function attack(unit: Unit, enemyTeam: Team) {
-    const target = determineTarget(enemyTeam);
-    if (target) {
-        const damage = unit.stats.attack - target.stats.guard;
-        console.info(unit.name + ' is targeting ' + target.name + ' for ' + unit.stats.attack + ' atk, being blocked by ' + target.stats.guard + ' guard, resulting in ' + damage + ' damage');
-        console.info(`${unit.name} is targeting ${target.name} for ${unit.stats.attack} atk, being blocked by ${target.stats.guard} guard, resulting in ${damage} damage`);
-        if (damage > 0) {
-            target.stats.health -= damage;
+function attack(unit: Unit, enemyTeam: Team, fight?: Fight) {
+    if(!fight.isOver) {
+        const target = determineTarget(enemyTeam);
+        if (target) {
+            const damage = unit.stats.attack - target.stats.guard;
+            console.info(`${unit.name} is targeting ${target.name} for ${unit.stats.attack} atk, being blocked by ${target.stats.guard} guard, resulting in ${damage} damage`);
+            if (damage > 0) {
+                target.stats.health -= damage;
+            }
         }
+    
+        checkState(fight);
     }
-
-    checkState(fight);
 }
 
 function getFightUnits(fight: Fight) {
@@ -87,17 +86,19 @@ function checkState(fight: Fight) {
     var friendlyAlive = getTeamUnits(fight.friendlyTeam, true);
     console.debug(friendlyAlive);
     if (!friendlyAlive || friendlyAlive.length < 1) {
-        console.log('all friendly units are dead');
+        console.info('all friendly units are dead');
         fight.isOver = true;
         fight.friendlyWon = false;
+        stopFight();
     }
 
     var enemyAlive = getTeamUnits(fight.enemyTeam, true)
     console.debug(enemyAlive);
     if (!enemyAlive || enemyAlive.length < 1) {
-        console.log('all enemy units are dead');
+        console.info('all enemy units are dead');
         fight.isOver = true;
         fight.friendlyWon = true;
+        stopFight();
     }
 }
 
@@ -127,31 +128,26 @@ function processTick(fight: Fight) {
     // attack in order of speed
     fight.friendlyTeam.frontline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, enemyTeam);
+            attack(item, enemyTeam, fight);
         }
     });
     fight.friendlyTeam.backline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, enemyTeam);
+            attack(item, enemyTeam, fight);
         }
     });
     fight.enemyTeam.frontline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam);
+            attack(item, friendlyTeam, fight);
         }
     });
     fight.enemyTeam.backline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam);
+            attack(item, friendlyTeam, fight);
         }
     });
-    console.info('friendly', fight.friendlyTeam);
-    console.info('enemy', fight.enemyTeam);
-    if (fight.isOver) {
-        console.debug(frontTargets);
-        console.debug(backTargets);
-        stopFight();
-    }
+    console.debug('friendly', fight.friendlyTeam);
+    console.debug('enemy', fight.enemyTeam);
     if (fight.isOver) {
         console.info(fight.friendlyWon ? 'Fight won' : 'Fight lost');
     }
@@ -168,20 +164,14 @@ fightSetup(fight);
 //fight cleanup (reset state and stats)
 //fight rewards / punishment
 
-/**
- * Runs a tick function at a set interval.
- *
- * @param tickFunction The function to be executed at each tick.
- * @param intervalMs The interval between ticks in milliseconds.
- */
 function startFight(fight: Fight) {
-    fightSetup(fight);
     isFighting = true;
+    fightSetup(fight);
     const tick = () => {
+        processTick(fight);
         if (!isFighting) {
             return;
         }
-        processTick(fight);
         setTimeout(tick, tickRate);
     };
 
@@ -197,6 +187,5 @@ window.onload = () => {
     const btn = document.getElementById('tick');
     btn.addEventListener('click', () => startFight(fight));
 
-    //runs a tick per second and stops on fight end
     startFight(fight);
 }
