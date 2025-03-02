@@ -142,22 +142,22 @@ function processTick(fight) {
     // attack in order of speed
     fight.friendlyTeam.frontline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, enemyTeam, fight);
+            attack(item, fight.enemyTeam, fight);
         }
     });
     fight.friendlyTeam.backline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, enemyTeam, fight);
+            attack(item, fight.enemyTeam, fight);
         }
     });
     fight.enemyTeam.frontline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam, fight);
+            attack(item, fight.friendlyTeam, fight);
         }
     });
     fight.enemyTeam.backline.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam, fight);
+            attack(item, fight.friendlyTeam, fight);
         }
     });
     console.debug('friendly', fight.friendlyTeam);
@@ -166,13 +166,6 @@ function processTick(fight) {
         console.info(fight.friendlyWon ? 'Fight won' : 'Fight lost');
     }
 }
-var friendlyTeam = { frontline: [__assign({}, units[0]), __assign({}, units[1]), __assign({}, units[2])], backline: [__assign({}, units[3]), __assign({}, units[4]), __assign({}, units[5])] };
-var enemyTeam = { frontline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])], backline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])] };
-var fight = { friendlyTeam: friendlyTeam, enemyTeam: enemyTeam };
-fightSetup(fight);
-//setup fight
-//run fight
-//fight ticks until the fight has a winner
 //fight cleanup (reset state and stats)
 //fight rewards / punishment
 function startFight(fight) {
@@ -192,6 +185,9 @@ function stopFight() {
     isFighting = false;
 }
 window.onload = function () {
+    var friendlyTeam = { frontline: [__assign({}, units[0]), __assign({}, units[1]), __assign({}, units[2])], backline: [__assign({}, units[3]), __assign({}, units[4]), __assign({}, units[5])] };
+    var enemyTeam = { frontline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])], backline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])] };
+    var fight = { friendlyTeam: friendlyTeam, enemyTeam: enemyTeam };
     var btn = document.getElementById('tick');
     btn.addEventListener('click', function () { return startFight(fight); });
     startFight(fight);

@@ -128,22 +128,22 @@ function processTick(fight: Fight) {
     // attack in order of speed
     fight.friendlyTeam.frontline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, enemyTeam, fight);
+            attack(item, fight.enemyTeam, fight);
         }
     });
     fight.friendlyTeam.backline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, enemyTeam, fight);
+            attack(item, fight.enemyTeam, fight);
         }
     });
     fight.enemyTeam.frontline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam, fight);
+            attack(item, fight.friendlyTeam, fight);
         }
     });
     fight.enemyTeam.backline.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, friendlyTeam, fight);
+            attack(item, fight.friendlyTeam, fight);
         }
     });
     console.debug('friendly', fight.friendlyTeam);
@@ -153,14 +153,6 @@ function processTick(fight: Fight) {
     }
 }
 
-const friendlyTeam: Team = { frontline: [{ ...units[0] }, { ...units[1] }, { ...units[2] }], backline: [{ ...units[3] }, { ...units[4] }, { ...units[5] }] };
-const enemyTeam: Team = { frontline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }], backline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }] };
-const fight: Fight = { friendlyTeam, enemyTeam }
-fightSetup(fight);
-
-//setup fight
-//run fight
-//fight ticks until the fight has a winner
 //fight cleanup (reset state and stats)
 //fight rewards / punishment
 
@@ -184,6 +176,10 @@ function stopFight() {
 }
 
 window.onload = () => {
+    const friendlyTeam: Team = { frontline: [{ ...units[0] }, { ...units[1] }, { ...units[2] }], backline: [{ ...units[3] }, { ...units[4] }, { ...units[5] }] };
+    const enemyTeam: Team = { frontline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }], backline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }] };
+    const fight: Fight = { friendlyTeam, enemyTeam }
+    
     const btn = document.getElementById('tick');
     btn.addEventListener('click', () => startFight(fight));
 
