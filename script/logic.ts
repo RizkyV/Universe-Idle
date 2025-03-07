@@ -38,7 +38,7 @@ function determineTarget(team: Team): Unit {
 }
 
 function attack(unit: Unit, enemyTeam: Team, fight?: Fight) {
-    if(!fight.isOver) {
+    if (!fight.isOver) {
         const target = determineTarget(enemyTeam);
         if (target) {
             const damage = unit.stats.attack - target.stats.guard;
@@ -47,13 +47,22 @@ function attack(unit: Unit, enemyTeam: Team, fight?: Fight) {
                 target.stats.health -= damage;
             }
         }
-    
+
         checkState(fight);
     }
 }
 
-function getFightUnits(fight: Fight) {
+function getFightUnits(fight: Fight, sort?: Sort) {
     const units = [...fight.friendlyTeam.backline, ...fight.friendlyTeam.frontline, ...fight.enemyTeam.backline, ...fight.enemyTeam.frontline];
+    switch (sort) {
+        case Sort.speed:
+            units.sort((a, b) => {
+                return b.stats.speed - a.stats.speed;
+            });
+            break;
+        default:
+            break;
+    }
     return units;
 }
 function getTeamUnits(team: Team, onlyAlive: boolean = false) {
@@ -125,25 +134,14 @@ function fightSetup(fight: Fight) {
 
 function processTick(fight: Fight) {
     console.info('tick');
-    // attack in order of speed
-    fight.friendlyTeam.frontline.forEach((item) => {
+    const units = getFightUnits(fight, Sort.speed);
+    units.forEach((item) => {
         if (!item.state.isDead) {
-            attack(item, fight.enemyTeam, fight);
-        }
-    });
-    fight.friendlyTeam.backline.forEach((item) => {
-        if (!item.state.isDead) {
-            attack(item, fight.enemyTeam, fight);
-        }
-    });
-    fight.enemyTeam.frontline.forEach((item) => {
-        if (!item.state.isDead) {
-            attack(item, fight.friendlyTeam, fight);
-        }
-    });
-    fight.enemyTeam.backline.forEach((item) => {
-        if (!item.state.isDead) {
-            attack(item, fight.friendlyTeam, fight);
+            if (item.state.isFriendly) {
+                attack(item, fight.enemyTeam, fight);
+            } else {
+                attack(item, fight.friendlyTeam, fight);
+            }
         }
     });
     console.debug('friendly', fight.friendlyTeam);
@@ -176,10 +174,10 @@ function stopFight() {
 }
 
 window.onload = () => {
-    const friendlyTeam: Team = { frontline: [{ ...units[0] }, { ...units[1] }, { ...units[2] }], backline: [{ ...units[3] }, { ...units[4] }, { ...units[5] }] };
-    const enemyTeam: Team = { frontline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }], backline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }] };
-    const fight: Fight = { friendlyTeam, enemyTeam }
-    
+    const friendlyTeam: Team = { leader: { ...units[0] }, frontline: [{ ...units[0] }, { ...units[1] }, { ...units[2] }], backline: [{ ...units[3] }, { ...units[4] }, { ...units[5] }] };
+    const enemyTeam: Team = { leader: { ...units[6] }, frontline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }], backline: [{ ...units[6] }, { ...units[6] }, { ...units[6] }] };
+    const fight: Fight = { friendlyTeam, enemyTeam, }
+
     const btn = document.getElementById('tick');
     btn.addEventListener('click', () => startFight(fight));
 

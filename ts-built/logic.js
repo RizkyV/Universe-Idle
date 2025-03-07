@@ -68,8 +68,17 @@ function attack(unit, enemyTeam, fight) {
         checkState(fight);
     }
 }
-function getFightUnits(fight) {
+function getFightUnits(fight, sort) {
     var units = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], fight.friendlyTeam.backline, true), fight.friendlyTeam.frontline, true), fight.enemyTeam.backline, true), fight.enemyTeam.frontline, true);
+    switch (sort) {
+        case Sort.speed:
+            units.sort(function (a, b) {
+                return b.stats.speed - a.stats.speed;
+            });
+            break;
+        default:
+            break;
+    }
     return units;
 }
 function getTeamUnits(team, onlyAlive) {
@@ -139,25 +148,15 @@ function fightSetup(fight) {
 }
 function processTick(fight) {
     console.info('tick');
-    // attack in order of speed
-    fight.friendlyTeam.frontline.forEach(function (item) {
+    var units = getFightUnits(fight, Sort.speed);
+    units.forEach(function (item) {
         if (!item.state.isDead) {
-            attack(item, fight.enemyTeam, fight);
-        }
-    });
-    fight.friendlyTeam.backline.forEach(function (item) {
-        if (!item.state.isDead) {
-            attack(item, fight.enemyTeam, fight);
-        }
-    });
-    fight.enemyTeam.frontline.forEach(function (item) {
-        if (!item.state.isDead) {
-            attack(item, fight.friendlyTeam, fight);
-        }
-    });
-    fight.enemyTeam.backline.forEach(function (item) {
-        if (!item.state.isDead) {
-            attack(item, fight.friendlyTeam, fight);
+            if (item.state.isFriendly) {
+                attack(item, fight.enemyTeam, fight);
+            }
+            else {
+                attack(item, fight.friendlyTeam, fight);
+            }
         }
     });
     console.debug('friendly', fight.friendlyTeam);
@@ -185,9 +184,9 @@ function stopFight() {
     isFighting = false;
 }
 window.onload = function () {
-    var friendlyTeam = { frontline: [__assign({}, units[0]), __assign({}, units[1]), __assign({}, units[2])], backline: [__assign({}, units[3]), __assign({}, units[4]), __assign({}, units[5])] };
-    var enemyTeam = { frontline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])], backline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])] };
-    var fight = { friendlyTeam: friendlyTeam, enemyTeam: enemyTeam };
+    var friendlyTeam = { leader: __assign({}, units[0]), frontline: [__assign({}, units[0]), __assign({}, units[1]), __assign({}, units[2])], backline: [__assign({}, units[3]), __assign({}, units[4]), __assign({}, units[5])] };
+    var enemyTeam = { leader: __assign({}, units[6]), frontline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])], backline: [__assign({}, units[6]), __assign({}, units[6]), __assign({}, units[6])] };
+    var fight = { friendlyTeam: friendlyTeam, enemyTeam: enemyTeam, };
     var btn = document.getElementById('tick');
     btn.addEventListener('click', function () { return startFight(fight); });
     startFight(fight);
