@@ -20,6 +20,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
+//go to a location - fight randomly generated enemies
+//each location has a boss fight that is predetermined, and stronger than
+//the random enemies
+//defeating a boss gives you a reward and lets you move on to other locations
 //constants
 var frontLineChanceMultiplier = 1.5;
 var tickRate = 1000;
@@ -27,7 +31,7 @@ var tickRate = 1000;
 var frontTargets = 0;
 var backTargets = 0;
 var isFighting = false;
-function determineTarget(team) {
+function getAttackTarget(team) {
     var aliveUnits = getTeamUnits(team, true);
     var backlineChance = 0;
     var frontlineChance = 0;
@@ -39,7 +43,7 @@ function determineTarget(team) {
             backlineChance += 1;
         }
     });
-    //Roll a number between 0 and the 2 chances put together
+    //Roll a number between 0 and the two chances put together
     //if the number is higher than the frontlinechance number, then it hits the backline
     var randomIndex = Math.random() * (frontlineChance + backlineChance);
     if (randomIndex <= frontlineChance) {
@@ -57,9 +61,11 @@ function determineTarget(team) {
 }
 function attack(unit, enemyTeam, fight) {
     if (!fight.isOver) {
-        var target = determineTarget(enemyTeam);
+        var target = getAttackTarget(enemyTeam);
         if (target) {
-            var damage = unit.stats.attack - target.stats.guard;
+            //interpret guard as a percentage instead
+            //maybe cap it at 90%?
+            var damage = unit.stats.attack * (1 - (target.stats.guard / 100));
             console.info("".concat(unit.name, " is targeting ").concat(target.name, " for ").concat(unit.stats.attack, " atk, being blocked by ").concat(target.stats.guard, " guard, resulting in ").concat(damage, " damage"));
             if (damage > 0) {
                 target.stats.health -= damage;
@@ -68,8 +74,7 @@ function attack(unit, enemyTeam, fight) {
         checkState(fight);
     }
 }
-function getFightUnits(fight, sort) {
-    var units = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], fight.friendlyTeam.backline, true), fight.friendlyTeam.frontline, true), fight.enemyTeam.backline, true), fight.enemyTeam.frontline, true);
+function sort(units, sort) {
     switch (sort) {
         case Sort.speed:
             units.sort(function (a, b) {
@@ -79,6 +84,10 @@ function getFightUnits(fight, sort) {
         default:
             break;
     }
+    return units;
+}
+function getFightUnits(fight) {
+    var units = __spreadArray(__spreadArray(__spreadArray(__spreadArray([], fight.friendlyTeam.backline, true), fight.friendlyTeam.frontline, true), fight.enemyTeam.backline, true), fight.enemyTeam.frontline, true);
     return units;
 }
 function getTeamUnits(team, onlyAlive) {
@@ -148,7 +157,7 @@ function fightSetup(fight) {
 }
 function processTick(fight) {
     console.info('tick');
-    var units = getFightUnits(fight, Sort.speed);
+    var units = sort(getFightUnits(fight), Sort.speed);
     units.forEach(function (item) {
         if (!item.state.isDead) {
             if (item.state.isFriendly) {

@@ -93,7 +93,7 @@ var units = [
         level: 1,
         xp: 0,
         traits: [
-            { name: 'Intimidate' }
+            { name: 'Sticky' }
         ],
         links: [
             { name: 'Marvel' },
@@ -119,7 +119,19 @@ var traits = [
             targets: [
                 { onlyEnemy: true, targetAll: true }
             ],
+            trigger: { onFightStart: true },
             effect: { stat: 'attack', isFlat: true, modifier: -5 }
+        }
+    },
+    {
+        name: 'Sticky',
+        ability: {
+            //onAttack, set speed to 0
+            targets: [
+                { attackedEnemy: true }
+            ],
+            trigger: { onAttack: true },
+            effect: { stat: 'speed', isFlat: false, modifier: 0 }
         }
     }
 ];
@@ -129,6 +141,7 @@ var links = [
 //Rager: Broly, Hulk
 //Villain: Buu, Broly
 //Hero: Goku, Mister Fantastic, Hulk, Spider-Man
+//Spider: Spider-Man, Elise, Shelob
 ];
 console.log(units);
 console.log(traits);

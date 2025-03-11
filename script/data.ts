@@ -39,6 +39,7 @@ interface Unit {
   special?: {};
   leader?: {}; //Leader ability - each team has a leader
   state?: State;
+  //buffs/debuffs - lists and keeps track of effects targeting this
 }
 
 interface State {
@@ -59,6 +60,7 @@ interface Stats {
   startingSpecial?: number; //how much special the unit starts with
   elusiveness?: number; //makes a unit less likely to be targeted - can also be used to make a unit more likely to be targeted (tank)
   dodge?: number; //determines how likely a unit is to dodge an attack
+  //crit chance - crit damage
   //resistances
 }
 
@@ -96,9 +98,12 @@ interface Target {
   onlyEnemy?: boolean;
   targetAll?: boolean; //still respects friendly or enemy
   targets?: number; //how many targets - used mostly for non-specific targets
-  islink?: boolean;
+  
+  isLink?: boolean;
   isType?: boolean;
   value?: Link | Type;
+
+  attackedEnemy?: boolean; //the enemy you attacked - used for onAttack triggers
 }
 
 interface Effect {
@@ -108,7 +113,8 @@ interface Effect {
 }
 
 interface Trigger {
-  constant?: boolean;
+  constant?: boolean; //? shouldnt they just be fightStart?
+  onFightStart?: boolean;
   onAttack?: boolean;
   onDeath?: boolean;
   onFriendlyDeath?: boolean;
@@ -208,7 +214,7 @@ const units: Unit[] = [
     level: 1,
     xp: 0,
     traits: [
-      { name: 'Intimidate' }
+      { name: 'Sticky' }
     ],
     links: [
       { name: 'Marvel' },
@@ -237,7 +243,19 @@ const traits: Trait[] = [
       targets: [
         { onlyEnemy: true, targetAll: true }
       ],
+      trigger: { onFightStart: true },
       effect: { stat: 'attack', isFlat: true, modifier: -5 }
+    }
+  },
+  {
+    name: 'Sticky',
+    ability: {
+      //onAttack, set speed to 0
+      targets: [
+        { attackedEnemy: true }
+      ],
+      trigger: { onAttack: true },
+      effect: { stat: 'speed', isFlat: false, modifier: 0 }
     }
   }
 ]
@@ -248,6 +266,7 @@ const links: Link[] = [
   //Rager: Broly, Hulk
   //Villain: Buu, Broly
   //Hero: Goku, Mister Fantastic, Hulk, Spider-Man
+  //Spider: Spider-Man, Elise, Shelob
 ]
 
 console.log(units);

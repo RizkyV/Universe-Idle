@@ -1,6 +1,11 @@
 //collect gacha units
 //multiple of the same unit can be prestiged
 
+//go to a location - fight randomly generated enemies
+//each location has a boss fight that is predetermined, and stronger than
+//the random enemies
+//defeating a boss gives you a reward and lets you move on to other locations
+
 //constants
 const frontLineChanceMultiplier = 1.5;
 const tickRate = 1000;
@@ -10,7 +15,7 @@ var backTargets = 0;
 var isFighting = false;
 
 
-function determineTarget(team: Team): Unit {
+function getAttackTarget(team: Team): Unit {
     const aliveUnits = getTeamUnits(team, true);
     var backlineChance = 0;
     var frontlineChance = 0;
@@ -21,7 +26,7 @@ function determineTarget(team: Team): Unit {
             backlineChance += 1;
         }
     });
-    //Roll a number between 0 and the 2 chances put together
+    //Roll a number between 0 and the two chances put together
     //if the number is higher than the frontlinechance number, then it hits the backline
     const randomIndex = Math.random() * (frontlineChance + backlineChance);
     if (randomIndex <= frontlineChance) {
@@ -39,9 +44,11 @@ function determineTarget(team: Team): Unit {
 
 function attack(unit: Unit, enemyTeam: Team, fight?: Fight) {
     if (!fight.isOver) {
-        const target = determineTarget(enemyTeam);
+        const target = getAttackTarget(enemyTeam);
         if (target) {
-            const damage = unit.stats.attack - target.stats.guard;
+            //interpret guard as a percentage instead
+            //maybe cap it at 90%?
+            const damage = unit.stats.attack * (1 - (target.stats.guard / 100));
             console.info(`${unit.name} is targeting ${target.name} for ${unit.stats.attack} atk, being blocked by ${target.stats.guard} guard, resulting in ${damage} damage`);
             if (damage > 0) {
                 target.stats.health -= damage;
@@ -52,8 +59,7 @@ function attack(unit: Unit, enemyTeam: Team, fight?: Fight) {
     }
 }
 
-function getFightUnits(fight: Fight, sort?: Sort) {
-    const units = [...fight.friendlyTeam.backline, ...fight.friendlyTeam.frontline, ...fight.enemyTeam.backline, ...fight.enemyTeam.frontline];
+function sort(units: Unit[], sort: Sort) {
     switch (sort) {
         case Sort.speed:
             units.sort((a, b) => {
@@ -63,6 +69,11 @@ function getFightUnits(fight: Fight, sort?: Sort) {
         default:
             break;
     }
+    return units;
+}
+
+function getFightUnits(fight: Fight) {
+    const units = [...fight.friendlyTeam.backline, ...fight.friendlyTeam.frontline, ...fight.enemyTeam.backline, ...fight.enemyTeam.frontline];
     return units;
 }
 function getTeamUnits(team: Team, onlyAlive: boolean = false) {
@@ -134,7 +145,7 @@ function fightSetup(fight: Fight) {
 
 function processTick(fight: Fight) {
     console.info('tick');
-    const units = getFightUnits(fight, Sort.speed);
+    const units = sort(getFightUnits(fight), Sort.speed);
     units.forEach((item) => {
         if (!item.state.isDead) {
             if (item.state.isFriendly) {
